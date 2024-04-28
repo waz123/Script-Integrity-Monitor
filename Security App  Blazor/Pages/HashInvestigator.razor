@@ -1,0 +1,66 @@
+﻿@page "/hash-investigator"
+@using Security_App__Blazor.Data
+@inject FileService FileService
+
+<h3>Hash Investigator</h3>
+
+@if (unauthScripts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (!unauthScripts.Any())
+{
+    <p>No unauthorized scripts found.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Script Hash</th>
+                <th>Script Content</th>
+                <th>Subdomain</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var script in unauthScripts)
+            {
+                <tr>
+                    <td class="col-md-6">
+                        <textarea rows="4" class="form-control">@script.Content</textarea>
+                    </td>
+                    <td class="col-md-2">@script.Hash</td>
+                    <td class="col-md-2"> @script.Subdomain</td>
+                    <td class="col-md-2">
+                        <button class="btn btn-primary" @onclick="() => ApproveHash(script)">Approve</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+}
+
+@code {
+    private List<ScriptHash> unauthScripts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        unauthScripts = await FileService.GetUnauthScripts();
+    }
+
+    private async Task ApproveHash(ScriptHash script)
+    {
+        await FileService.ApproveHash(script.Hash, script.FilePath);
+        unauthScripts.RemoveAll(s => s.Hash == script.Hash);
+    }
+
+    public class ScriptHash
+    {
+        public string Hash { get; set; }
+        public string Content { get; set; } // This now holds the entire content
+        public string Subdomain { get; set; }
+        public string FilePath { get; set; }
+    }
+}

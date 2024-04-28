@@ -1,0 +1,156 @@
+﻿@page "/scripts"
+@using Security_App__Blazor.Data
+@using Security_App__Blazor.Data.Models
+@inject ScriptCheckerService ScriptCheckerService
+@inject ScriptResultService ScriptResultService
+@implements IDisposable
+
+<h3>Script Checker</h3>
+
+<div class="mb-3">
+    <label for="urlInput" class="form-label">URL</label>
+    <input type="text" class="form-control" id="urlInput" @bind="urlToCheck" placeholder="Enter URL">
+</div>
+<button class="btn btn-primary" @onclick="CheckScripts">Check Scripts</button>
+
+<div class="mb-3">
+    <label for="fileInput" class="form-label">Upload list of URLs</label>
+    <InputFile id="fileInput" OnChange="HandleFileUpload"></InputFile>
+    <button class="btn btn-secondary mt-2" @onclick="ResendFile" disabled="@(!canResend)">Resend Last File</button>
+</div>
+
+<div class="mb-3">
+    <label for="intervalInput" class="form-label">Set Timer Interval (Minutes):</label>
+    <input type="number" class="form-control" id="intervalInput" @bind="timerInterval" min="1">
+    <button class="btn btn-info mt-2" @onclick="UpdateTimer">Update Timer</button>
+</div>
+
+@if (scriptGroups != null && scriptGroups.Any())
+{
+    @foreach (var group in scriptGroups)
+    {
+        <div>
+            <h5>@group.Key</h5>
+            <p>Allowed: @group.Value.Count(s => s.Allowed == true)</p>
+            <p>Not Allowed: @group.Value.Count(s => s.Allowed == false)</p>
+            <p>External: @group.Value.Count(s => s.Type == "external")</p>
+            <hr />
+        </div>
+    }
+}
+else if (isLoading)
+{
+    <p><em>Loading...</em></p>
+}
+
+<div class="mb-3">
+    <label for="timerDisplay" class="form-label">Time until next check:</label>
+    <p id="timerDisplay">@($"{Math.Floor(timeLeft.TotalMinutes):00}:{timeLeft.Seconds:00}")</p>
+</div>
+
+@code {
+    private string urlToCheck;
+    private Dictionary<string, List<ScriptModel>> scriptGroups;
+    private bool isLoading = false;
+    private IBrowserFile lastUploadedFile;
+    private bool canResend = false;
+    private Timer timer;
+    private int timerInterval = 5;
+    private TimeSpan timeLeft;
+    private Timer countdownTimer;
+
+    protected override Task OnInitializedAsync()
+    {
+        timeLeft = TimeSpan.FromMinutes(timerInterval);
+        timer = new Timer(InvokePeriodicTask, null, 0, timerInterval * 60000);
+        countdownTimer = new Timer(UpdateCountdown, null, 1000, 1000);
+        return base.OnInitializedAsync();
+    }
+
+    //used to send the url.txt file every X number of minutes
+    private void InvokePeriodicTask(object state)
+    {
+        InvokeAsync(async () =>
+        {
+            if (lastUploadedFile != null)
+            {
+                await ResendFile();
+            }
+            timeLeft = TimeSpan.FromMinutes(timerInterval); // Reset the countdown
+        });
+    }
+
+    private void UpdateTimer()
+    {
+        if (timerInterval > 0)
+        {
+            timer.Change(0, timerInterval * 60000); // Update the main timer to new interval
+            timeLeft = TimeSpan.FromMinutes(timerInterval); // Reset the countdown
+        }
+    }
+
+    private void UpdateCountdown(object state)
+    {
+        if (timeLeft.TotalSeconds > 0)
+        {
+            timeLeft = timeLeft.Add(TimeSpan.FromSeconds(-1));
+        }
+        else
+        {
+            timeLeft = TimeSpan.FromMinutes(timerInterval); // Reset the countdown
+        }
+
+        InvokeAsync(StateHasChanged); // Refresh UI
+    }
+
+    private async Task CheckScripts()
+    {
+        isLoading = true;
+        var scripts = await ScriptCheckerService.GetScriptAsync(urlToCheck);
+        ProcessScripts(scripts);
+        isLoading = false;
+    }
+
+    private async Task HandleFileUpload(InputFileChangeEventArgs e)
+    {
+        isLoading = true;
+        lastUploadedFile = e.File;
+        canResend = lastUploadedFile != null;
+        if (lastUploadedFile != null)
+        {
+            var scripts = await ScriptCheckerService.UploadFileAsync(lastUploadedFile);
+            ProcessScripts(scripts);
+        }
+        isLoading = false;
+    }
+
+    private async Task ResendFile()
+    {
+        if (lastUploadedFile != null)
+        {
+            isLoading = true;
+            var scripts = await ScriptCheckerService.UploadFileAsync(lastUploadedFile);
+            ProcessScripts(scripts);
+            isLoading = false;
+        }
+    }
+
+    private void ProcessScripts(List<ScriptModel> scripts)
+    {
+        if (scripts == null || !scripts.Any()) return;
+
+        ScriptResultService.scriptGroups = scripts.GroupBy(script => script.Subdomain)
+                              .ToDictionary(group => group.Key, group => group.ToList());
+    }
+
+    protected override void OnInitialized()
+    {
+        scriptGroups = ScriptResultService.scriptGroups;
+    }
+
+    public void Dispose()
+    {
+        timer?.Dispose();
+        countdownTimer?.Dispose();
+    }
+}
