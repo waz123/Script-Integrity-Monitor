@@ -3,9 +3,43 @@
 @using Security_App__Blazor.Data.Models
 @inject ScriptCheckerService ScriptCheckerService
 @inject ScriptResultService ScriptResultService
+@inject SharedResultService SharedResultService
+
 @implements IDisposable
 
 <h3>Script Checker</h3>
+
+
+<h3>Script Checker Results</h3>
+
+@if (SharedResultService.ScriptGroups != null && SharedResultService.ScriptGroups.Any())
+{
+    var pagedGroups = SharedResultService.ScriptGroups
+                         .Skip((currentPage - 1) * pageSize)
+                         .Take(pageSize)
+                         .ToDictionary(g => g.Key, g => g.Value);
+
+    foreach (var group in pagedGroups)
+    {
+        <div>
+            <h5>@group.Key</h5>
+            <p>Allowed: @group.Value.Count(s => s.Allowed == true)</p>
+            <p>Not Allowed: @group.Value.Count(s => s.Allowed == false)</p>
+            <p>External: @group.Value.Count(s => s.Type == "external")</p>
+            <hr />
+        </div>
+    }
+}
+else
+{
+    <p>No scripts have been checked yet or data is still loading.</p>
+}
+
+<button disabled="@IsFirstPage()" @onclick="PreviousPage">Previous</button>
+<button disabled="@IsLastPage()" @onclick="NextPage">Next</button>
+
+<p>Page @currentPage of @TotalPages()</p>
+
 
 <div class="mb-3">
     <label for="urlInput" class="form-label">URL</label>
@@ -59,14 +93,52 @@ else if (isLoading)
     private TimeSpan timeLeft;
     private Timer countdownTimer;
 
+
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalGroups => SharedResultService.ScriptGroups.Count;
+    private Dictionary<string, List<ScriptModel>> PagedGroups =>
+        SharedResultService.ScriptGroups
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize)
+            .ToDictionary(g => g.Key, g => g.Value);
+
+
+    private bool IsFirstPage() => currentPage == 1;
+    private bool IsLastPage() => currentPage >= TotalPages();
+
+    private int TotalPages() => (int)Math.Ceiling((double)totalGroups / pageSize);
+
+    private void NextPage()
+    {
+        if (!IsLastPage())
+        {
+            currentPage++;
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (!IsFirstPage())
+        {
+            currentPage--;
+            StateHasChanged();
+        }
+    }
     protected override Task OnInitializedAsync()
     {
+        SharedResultService.OnChange += HandleOnChange;
         timeLeft = TimeSpan.FromMinutes(timerInterval);
         timer = new Timer(InvokePeriodicTask, null, 0, timerInterval * 60000);
         countdownTimer = new Timer(UpdateCountdown, null, 1000, 1000);
         return base.OnInitializedAsync();
+        
     }
-
+    private async void HandleOnChange()
+    {
+        await InvokeAsync(StateHasChanged);  // This ensures UI thread access
+    }
     //used to send the url.txt file every X number of minutes
     private void InvokePeriodicTask(object state)
     {
@@ -152,5 +224,6 @@ else if (isLoading)
     {
         timer?.Dispose();
         countdownTimer?.Dispose();
+        SharedResultService.OnChange -= HandleOnChange; ;
     }
 }

@@ -17,6 +17,7 @@ public class ScriptCheckerBackgroundService : BackgroundService
             {
                 var scriptCheckerService = scope.ServiceProvider.GetRequiredService<ScriptCheckerService>();
                 var fileService = scope.ServiceProvider.GetRequiredService<FileService>();
+                var sharedResultService = scope.ServiceProvider.GetRequiredService<SharedResultService>();
 
                 // Get the URL file content
                 var urlFileContent = await fileService.GetUrlFile("urls.txt");
@@ -24,10 +25,13 @@ public class ScriptCheckerBackgroundService : BackgroundService
                 // Send the file content to API
                 var checkedScripts = await scriptCheckerService.UploadFileAsync(urlFileContent);
 
+                // Update shared results
+                sharedResultService.UpdateScripts(checkedScripts);
+
             }
 
             // Delay before the next iteration
-            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+            await Task.Delay(_interval, stoppingToken);
         }
     }
 }
