@@ -11,7 +11,8 @@ builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<ScriptCheckerService>();
 builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<ScriptResultService>();
-builder.Services.AddSingleton<ScriptCheckerBackgroundService>();
+builder.Services.AddHostedService<ScriptCheckerBackgroundService>();
+builder.Services.AddSingleton<SharedResultService>();
 
 builder.Services.AddHttpClient();
 
@@ -34,7 +35,7 @@ app.UseRouting();
 app.MapBlazorHub();
 app.MapFallbackToPage("/_Host");
 
-using var cts = new CancellationTokenSource();
-app.Services.GetRequiredService<ScriptCheckerBackgroundService>().StartAsync(cts.Token);
+//using var cts = new CancellationTokenSource();
+//app.Services.GetRequiredService<ScriptCheckerBackgroundService>().StartAsync(cts.Token);
 
 app.Run();
