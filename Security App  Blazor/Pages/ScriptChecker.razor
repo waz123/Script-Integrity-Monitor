@@ -126,6 +126,7 @@ else if (isLoading)
             StateHasChanged();
         }
     }
+
     protected override Task OnInitializedAsync()
     {
         SharedResultService.OnChange += HandleOnChange;
