@@ -12,6 +12,7 @@ public class SharedResultService
     public event Action OnChange;
 
     private Dictionary<string, List<ScriptModel>> _scriptGroups = new Dictionary<string, List<ScriptModel>>();
+
     public Dictionary<string, List<ScriptModel>> ScriptGroups
     {
         get { return _scriptGroups; }
@@ -30,8 +31,12 @@ public class SharedResultService
 
     private void ProcessScripts(List<ScriptModel> scripts)
     {
-        if (scripts == null || !scripts.Any()) return;
-
+        ScriptGroups = new Dictionary<string, List<ScriptModel>>();
+        if (scripts == null || !scripts.Any())
+        {
+            
+            return;
+        }
         ScriptGroups = scripts.GroupBy(script => script.Subdomain)
                               .ToDictionary(group => group.Key, group => group.ToList());
     }

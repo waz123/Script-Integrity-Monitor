@@ -4,11 +4,17 @@
 @inject ScriptCheckerService ScriptCheckerService
 @inject ScriptResultService ScriptResultService
 @inject SharedResultService SharedResultService
+@inject IJSRuntime JS
 
 @implements IDisposable
 
 <h3>Script Checker</h3>
 
+<!-- Toolbar -->
+<div class="toolbar d-flex justify-content-start mb-4">
+    <button class="btn btn-primary me-2" @onclick="OpenUpdateTimerModal">Update Timer</button>
+    <button class="btn btn-secondary" @onclick="OpenEditFileModal">Edit Uploaded URLs</button>
+</div>
 
 <h3>Script Checker Results</h3>
 
@@ -40,8 +46,7 @@ else
 
 <p>Page @currentPage of @TotalPages()</p>
 
-
-<div class="mb-3">
+@* <div class="mb-3">
     <label for="urlInput" class="form-label">URL</label>
     <input type="text" class="form-control" id="urlInput" @bind="urlToCheck" placeholder="Enter URL">
 </div>
@@ -54,10 +59,9 @@ else
 </div>
 
 <div class="mb-3">
-    <label for="intervalInput" class="form-label">Set Timer Interval (Minutes):</label>
-    <input type="number" class="form-control" id="intervalInput" @bind="timerInterval" min="1">
-    <button class="btn btn-info mt-2" @onclick="UpdateTimer">Update Timer</button>
-</div>
+    <label for="timerDisplay" class="form-label">Time until next check:</label>
+    <p id="timerDisplay">@($"{Math.Floor(timeLeft.TotalMinutes):00}:{timeLeft.Seconds:00}")</p>
+</div> *@
 
 @if (scriptGroups != null && scriptGroups.Any())
 {
@@ -77,9 +81,45 @@ else if (isLoading)
     <p><em>Loading...</em></p>
 }
 
-<div class="mb-3">
-    <label for="timerDisplay" class="form-label">Time until next check:</label>
-    <p id="timerDisplay">@($"{Math.Floor(timeLeft.TotalMinutes):00}:{timeLeft.Seconds:00}")</p>
+<!-- Modal for Updating Timer -->
+<div class="modal fade" id="updateTimerModal" tabindex="-1" aria-labelledby="updateTimerModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="updateTimerModalLabel">Update Timer Interval</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="intervalInput" class="form-label">Set Timer Interval (Minutes):</label>
+                    <input type="number" class="form-control" id="intervalInput" @bind="timerInterval" min="1">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-info" @onclick="UpdateTimer" data-bs-dismiss="modal">Update Timer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Editing URLs -->
+<div class="modal fade" id="editFileModal" tabindex="-1" aria-labelledby="editFileModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editFileModalLabel">Edit Uploaded URLs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <textarea class="form-control" rows="10" @bind="fileContent"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveFileContent">Save Changes</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @code {
@@ -93,16 +133,43 @@ else if (isLoading)
     private TimeSpan timeLeft;
     private Timer countdownTimer;
 
-
     private int currentPage = 1;
     private int pageSize = 10;
     private int totalGroups => SharedResultService.ScriptGroups.Count;
-    private Dictionary<string, List<ScriptModel>> PagedGroups =>
-        SharedResultService.ScriptGroups
-            .Skip((currentPage - 1) * pageSize)
-            .Take(pageSize)
-            .ToDictionary(g => g.Key, g => g.Value);
+    private string fileContent;
+    private string filePath = "C:\\Users\\Chris\\source\\repos\\Security App\\Security App  Blazor\\API\\urls.txt";
 
+    // Opens the modal for editing the file
+    private async Task OpenEditFileModal()
+    {
+        fileContent = await LoadFileContent();
+        await JS.InvokeVoidAsync("openModal", "#editFileModal");
+    }
+
+    // Loads the content of the file
+    private async Task<string> LoadFileContent()
+    {
+        if (File.Exists(filePath))
+        {
+            return await File.ReadAllTextAsync(filePath);
+        }
+        return string.Empty;
+    }
+
+    // Saves the modified content to the file
+    private async Task SaveFileContent()
+    {
+        if (!string.IsNullOrWhiteSpace(fileContent))
+        {
+            await File.WriteAllTextAsync(filePath, fileContent);
+        }
+    }
+
+    // To manage opening the modal
+    private async Task OpenUpdateTimerModal()
+    {
+        await JS.InvokeVoidAsync("openModal", "#updateTimerModal");
+    }
 
     private bool IsFirstPage() => currentPage == 1;
     private bool IsLastPage() => currentPage >= TotalPages();
@@ -134,12 +201,15 @@ else if (isLoading)
         timer = new Timer(InvokePeriodicTask, null, 0, timerInterval * 60000);
         countdownTimer = new Timer(UpdateCountdown, null, 1000, 1000);
         return base.OnInitializedAsync();
-        
     }
+
+
+
     private async void HandleOnChange()
     {
         await InvokeAsync(StateHasChanged);  // This ensures UI thread access
     }
+
     //used to send the url.txt file every X number of minutes
     private void InvokePeriodicTask(object state)
     {

@@ -20,36 +20,68 @@ public class FileService : IFileService
         {
             // Get all files in the directory that end with "_unauth_scripts.txt"
             var filePaths = Directory.GetFiles(directoryPath, "*_unauth_scripts.txt");
+            var urlFilePath = Directory.GetFiles(directoryPath, "urls.txt");
+            List<string> subdomainsList = new List<string>();
+
+            //check urls.txt to make sure we still care about the subdomain
+            foreach (var files in urlFilePath)
+            {
+
+                var rows = await File.ReadAllLinesAsync(files);
+
+                foreach (var lines in rows)
+                {
+                    if (Uri.TryCreate(lines, UriKind.Absolute, out Uri uri))
+                    {
+                        // Split the host to extract the subdomain (excluding TLDs and www)
+                        string host = uri.Host;
+                        string subdomain = host.Split('.')
+                                               .Where(part => part != "www" && !part.Contains("com") && !part.Contains("org"))
+                                               .FirstOrDefault();
+                        if (!string.IsNullOrEmpty(subdomain))
+                        {
+                            subdomainsList.Add(subdomain); // Add to the list
+                        }
+                    }
+
+                }
+
+            }
             foreach (var filePath in filePaths)
             {
+                // Extract subdomain from the file name
                 var subdomain = Path.GetFileNameWithoutExtension(filePath).Split('_')[0];
-                var lines = await File.ReadAllLinesAsync(filePath);
-                ScriptHash currentScript = null;
-                // Iterate through each line in the file to parse hashes and contents
-                foreach (var line in lines)
+
+                if (subdomainsList.Contains(subdomain)) // Check if the subdomain is in the list
                 {
-                    if (line.StartsWith("Script hash:"))
+                    var lines = await File.ReadAllLinesAsync(filePath);
+                    ScriptHash currentScript = null;
+                    // Iterate through each line in the file to parse hashes and contents
+                    foreach (var line in lines)
                     {
-                        if (currentScript != null)
+                        if (line.StartsWith("Script hash:"))
                         {
-                            scriptList.Add(currentScript); // Add the previous script to the list before starting a new one
+                            if (currentScript != null)
+                            {
+                                scriptList.Add(currentScript); // Add the previous script to the list before starting a new one
+                            }
+                            currentScript = new ScriptHash
+                            {
+                                Hash = line.Replace("Script hash: ", "").Trim(),
+                                Subdomain = subdomain,
+                                FilePath = filePath
+                            };
                         }
-                        currentScript = new ScriptHash
+                        else if (currentScript != null)
                         {
-                            Hash = line.Replace("Script hash: ", "").Trim(),
-                            Subdomain = subdomain,
-                            FilePath = filePath
-                        };
+                            // Add to the content of the current script
+                            currentScript.Content += line + "\n";  // Ensure content accumulates with line breaks
+                        }
                     }
-                    else if (currentScript != null)
+                    if (currentScript != null)
                     {
-                        // Add to the content of the current script
-                        currentScript.Content += line + "\n";  // Ensure content accumulates with line breaks
+                        scriptList.Add(currentScript); // Add the last script to the list
                     }
-                }
-                if (currentScript != null)
-                {
-                    scriptList.Add(currentScript); // Add the last script to the list
                 }
             }
         }
