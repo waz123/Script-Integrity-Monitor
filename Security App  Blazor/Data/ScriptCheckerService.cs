@@ -16,7 +16,7 @@ public class ScriptCheckerService
     public async Task<List<ScriptModel>> GetScriptAsync(string url)
     {
 		var httpClient = _httpClientFactory.CreateClient();
-		var response = await httpClient.PostAsJsonAsync("http://127.0.0.1:8000/check-scripts/", new { url = url });
+		var response = await httpClient.PostAsJsonAsync("http://127.0.0.1:8000/check-url/", new { url = url });
 
 		response.EnsureSuccessStatusCode();
 
