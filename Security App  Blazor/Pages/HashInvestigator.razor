@@ -24,30 +24,73 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var script in unauthScripts)
+            @if (unauthScripts == null || !unauthScripts.Any())
             {
-                <tr>
-                    <td class="col-md-6">
+                <p>No unauthorized scripts found or still loading.</p>
+            }
+            else 
+            {
+                @foreach (var script in PaginatedScripts())
+                {
+                    <tr>
+                        <td class="col-md-6">
                         <textarea rows="4" class="form-control">@script.Content</textarea>
                     </td>
                     <td class="col-md-2">@script.Hash</td>
-                    <td class="col-md-2"> @script.Subdomain</td>
+                    <td class="col-md-2">@script.Subdomain</td>
                     <td class="col-md-2">
                         <button class="btn btn-primary" @onclick="() => ApproveHash(script)">Approve</button>
                     </td>
                 </tr>
+                }
             }
         </tbody>
     </table>
-
+    <button class="btn btn-primary" @onclick="PreviousPage" disabled="@IsFirstPage()">Previous</button>
+    <button class="btn btn-primary" @onclick="NextPage" disabled="@IsLastPage()">Next</button>
+    <p>Page @currentPage of @TotalPages()</p>
 }
 
 @code {
     private List<ScriptHash> unauthScripts;
+    private int currentPage = 1;
+    private int pageSize = 10;
+ 
+    private bool IsFirstPage() => currentPage == 1;
+    private bool IsLastPage() => currentPage >= TotalPages();
 
+    private int TotalPages() => (int)Math.Ceiling((double)unauthScripts.Count / pageSize);
+
+    private void NextPage()
+    {
+        if (!IsLastPage())
+        {
+            currentPage++;
+            StateHasChanged();
+        }
+    }
+
+    private void PreviousPage()
+    {
+        if (!IsFirstPage())
+        {
+            currentPage--;
+            StateHasChanged();
+        }
+    }
+
+    private IEnumerable<ScriptHash> PaginatedScripts()
+    {
+        return unauthScripts
+            .Skip((currentPage - 1) * pageSize)
+            .Take(pageSize);
+    }
     protected override async Task OnInitializedAsync()
     {
         unauthScripts = await FileService.GetUnauthScripts();
+        // Optionally handle empty or null lists if needed
+        if (unauthScripts == null)
+            unauthScripts = new List<ScriptHash>();
     }
 
     private async Task ApproveHash(ScriptHash script)

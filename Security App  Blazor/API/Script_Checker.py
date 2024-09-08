@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request
 from pydantic import BaseModel
 from typing import List
 from bs4 import BeautifulSoup
@@ -68,6 +68,59 @@ def compare_or_create_baseline(filename, current_hashes):
                 file.flush()
     
     return hash_status
+
+class URLRequest(BaseModel):
+    url: str
+
+@app.post("/check-url/")
+async def check_url(request: Request):
+    data = await request.json()
+    url = data.get('url')
+
+    if not url:
+        return {"error": "No URL Provided"}
+    
+    scripts = extract_scripts(url)
+
+    if scripts is None:
+        return {"error": "No Scripts Found"}
+    
+    all_scripts_info = []
+    files_cleared = set()
+
+    subdomain = url.split("//")[-1].split(".")[0]
+    filename = f"{subdomain}.txt"
+    unauth_filename = f"{subdomain}_unauth_scripts.txt"
+
+    if unauth_filename not in files_cleared:
+        clear_file(unauth_filename)
+        files_cleared.add(unauth_filename)
+
+    for script in scripts:
+        script_content = download_script_content(script['src']) if script['type'] == 'external' else script['content']
+        if script_content is None:
+            continue
+
+        script_hash = hash_script(script_content)
+        hash_status = compare_or_create_baseline(filename, [script_hash])
+        allowed = hash_status.get(script_hash, None)
+
+        script_info = {
+            "subdomain": subdomain,
+            "hash": script_hash,
+            "src": script.get('src', None),
+            "type": script['type'],
+            "allowed": allowed
+        }
+        all_scripts_info.append(script_info)
+
+        if not allowed:
+            append_to_file(unauth_filename, f"Script hash: {script_hash}\nScript content: {script_content}\n")
+
+    return {"scripts": all_scripts_info}
+
+
+
 
 @app.post("/check-url-file/")
 async def check_url_file(file: UploadFile = File(...)):

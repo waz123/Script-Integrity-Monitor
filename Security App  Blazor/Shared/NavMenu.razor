@@ -1,37 +1,50 @@
 ﻿<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Security App  Blazor</a>
+        <a class="navbar-brand" href="">Security App Blazor</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
     </div>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+<div class="@NavMenuCssClass nav-scrollable">
     <nav class="flex-column">
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="oi oi-home" aria-hidden="true"></span> Home
             </NavLink>
-            <NavLink class="nav-link" href="/scripts" Match="NavLinkMatch.All">
+
+            <!-- Collapsible Script Checker with sub-menu -->
+            <NavLink class="nav-link" @onclick="ToggleSubMenu">
                 <span class="oi oi-bug" aria-hidden="true"></span> Script Checker
+                <i class="bi bi-list ms-auto"></i>
             </NavLink>
-            <NavLink class="nav-link" href="/hash-investigator" Match="NavLinkMatch.All">
-                <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Hash Investigator
-            </NavLink>
+            @if (expandSubNav)
+            {
+                <NavLink class="nav-link ms-4" href="/scripts">
+                    <span class="oi oi-eye" aria-hidden="true"></span> Script Monitor
+                </NavLink>
+                <NavLink class="nav-link ms-4" href="/hash-investigator">
+                    <span class="oi oi-magnifying-glass" aria-hidden="true"></span> Hash Investigator
+                </NavLink>
+            }
         </div>
     </nav>
 </div>
 
-
-
 @code {
     private bool collapseNavMenu = true;
+    private bool expandSubNav = false;
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    private void ToggleSubMenu()
+    {
+        expandSubNav = !expandSubNav;
     }
 }
