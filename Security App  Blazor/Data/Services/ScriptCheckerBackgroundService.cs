@@ -1,4 +1,4 @@
-﻿namespace Security_App__Blazor.Data;
+﻿namespace Security_App__Blazor.Data.Services;
 
 public class ScriptCheckerBackgroundService : BackgroundService
 {
@@ -12,7 +12,7 @@ public class ScriptCheckerBackgroundService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
-                {
+        {
             using (var scope = _serviceProvider.CreateScope())
             {
                 var scriptCheckerService = scope.ServiceProvider.GetRequiredService<ScriptCheckerService>();
