@@ -1,7 +1,7 @@
 ﻿using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
 
-namespace Security_App__Blazor.Data;
+namespace Security_App__Blazor.Data.Services;
 
 public class EmailService
 {

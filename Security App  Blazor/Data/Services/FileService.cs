@@ -1,6 +1,6 @@
 ﻿using static Security_App__Blazor.Pages.HashInvestigator;
 
-namespace Security_App__Blazor.Data;
+namespace Security_App__Blazor.Data.Services;
 
 public interface IFileService
 {

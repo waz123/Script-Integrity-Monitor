@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
-using Security_App__Blazor.Data;
+using Security_App__Blazor.Data.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +13,6 @@ builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<ScriptResultService>();
 builder.Services.AddHostedService<ScriptCheckerBackgroundService>();
 builder.Services.AddSingleton<SharedResultService>();
-builder.Services.AddSingleton<EmailService>();
 
 builder.Services.AddHttpClient();
 

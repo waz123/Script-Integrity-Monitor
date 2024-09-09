@@ -1,6 +1,6 @@
 ﻿using Security_App__Blazor.Data.Models;
 
-namespace Security_App__Blazor.Data;
+namespace Security_App__Blazor.Data.Services;
 
 public class ScriptResultService
 {

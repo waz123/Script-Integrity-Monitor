@@ -3,10 +3,10 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Security_App__Blazor.Data.Models;
 
-namespace Security_App__Blazor.Data;
+namespace Security_App__Blazor.Data.Services;
 public class SharedResultService
 {
-   
+
     private List<ScriptModel> _scripts = new List<ScriptModel>();
 
     public event Action OnChange;
@@ -34,7 +34,7 @@ public class SharedResultService
         ScriptGroups = new Dictionary<string, List<ScriptModel>>();
         if (scripts == null || !scripts.Any())
         {
-            
+
             return;
         }
         ScriptGroups = scripts.GroupBy(script => script.Subdomain)
