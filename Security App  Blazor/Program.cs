@@ -1,13 +1,17 @@
+using Amazon.Auth.AccessControlPolicy.ActionIdentifiers;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Web;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Security_App__Blazor.Data.Services;
+using DBA;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<ScriptCheckerService>();
 builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<ScriptResultService>();
@@ -15,6 +19,10 @@ builder.Services.AddHostedService<ScriptCheckerBackgroundService>();
 builder.Services.AddSingleton<SharedResultService>();
 
 builder.Services.AddHttpClient();
+
+//Adding Entity Framework Core
+builder.Services.AddDbContext<DbaDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
