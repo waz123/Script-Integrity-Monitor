@@ -1,11 +1,11 @@
 ﻿@page "/scripts"
-@	using Security_App__Blazor.Data
-@	using Security_App__Blazor.Data.Models
-@inject ScriptCheckerService ScriptCheckerService
-@inject ScriptResultService ScriptResultService
-@inject SharedResultService SharedResultService
+@using Security_App__Blazor.Data
+@using Security_App__Blazor.Data.Models
+@inject Security_App__Blazor.Data.Services.ScriptCheckerService ScriptCheckerService
+@inject Security_App__Blazor.Data.Services.ScriptResultService ScriptResultService
+@inject Security_App__Blazor.Data.Services.SharedResultService SharedResultService
 @inject IJSRuntime JS
-
+ 
 @implements IDisposable
 
 <h3>Script Checker</h3>
