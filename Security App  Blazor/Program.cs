@@ -17,6 +17,7 @@ builder.Services.AddScoped<FileService>();
 builder.Services.AddSingleton<ScriptResultService>();
 builder.Services.AddHostedService<ScriptCheckerBackgroundService>();
 builder.Services.AddSingleton<SharedResultService>();
+builder.Services.AddScoped<EmailService>();
 
 builder.Services.AddHttpClient();
 
