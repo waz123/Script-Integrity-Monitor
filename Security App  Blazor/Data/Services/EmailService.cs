@@ -1,13 +1,21 @@
 ﻿using Amazon.SimpleEmail;
 using Amazon.SimpleEmail.Model;
+using Microsoft.Extensions.Configuration;
 
 namespace Security_App__Blazor.Data.Services;
 
 public class EmailService
 {
-    private readonly string _awsAccessKeyId = "ACCESS_KEY";
-    private readonly string _awsSecretKey = "SECRET_KEY";
-    private readonly string _senderAddress = "noreply@parking-receipt.com";
+    private readonly string _awsAccessKeyId;
+    private readonly string _awsSecretKey;
+    private readonly string _senderAddress;
+
+    public EmailService(IConfiguration configuration)
+    {
+        _awsAccessKeyId = configuration["AwsSes:AccessKeyId"] ?? string.Empty;
+        _awsSecretKey = configuration["AwsSes:SecretKey"] ?? string.Empty;
+        _senderAddress = configuration["AwsSes:SenderAddress"] ?? string.Empty;
+    }
 
     public async Task SendEmailAsync(string recipient, string subject, string htmlBody, string textBody)
     {
