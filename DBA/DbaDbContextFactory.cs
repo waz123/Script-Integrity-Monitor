@@ -14,7 +14,10 @@ public class DbaDbContextFactory : IDesignTimeDbContextFactory<DbaDbContext>
     {
         var optionsBuilder = new DbContextOptionsBuilder<DbaDbContext>();
 
-        optionsBuilder.UseNpgsql("Host=localhost;Database=SecurityApp;Username=postgres;Password=admin");
+        var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+            ?? "Host=localhost;Database=SecurityApp;Username=USER;Password=PASS";
+
+        optionsBuilder.UseNpgsql(connectionString);
 
         return new DbaDbContext(optionsBuilder.Options);
     }

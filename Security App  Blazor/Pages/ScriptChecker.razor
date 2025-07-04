@@ -1,10 +1,13 @@
 ﻿@page "/scripts"
 @using Security_App__Blazor.Data
 @using Security_App__Blazor.Data.Models
+@using Microsoft.Extensions.Configuration
+@using System.IO
 @inject Security_App__Blazor.Data.Services.ScriptCheckerService ScriptCheckerService
 @inject Security_App__Blazor.Data.Services.ScriptResultService ScriptResultService
 @inject Security_App__Blazor.Data.Services.SharedResultService SharedResultService
 @inject IJSRuntime JS
+@inject IConfiguration Configuration
  
 @implements IDisposable
 
@@ -137,7 +140,7 @@ else if (isLoading)
     private int pageSize = 10;
     private int totalGroups => SharedResultService.ScriptGroups.Count;
     private string fileContent;
-    private string filePath = "C:\\Users\\Chris\\source\\repos\\Security App\\Security App  Blazor\\API\\urls.txt";
+    private string filePath;
 
     // Opens the modal for editing the file
     private async Task OpenEditFileModal()
@@ -288,6 +291,7 @@ else if (isLoading)
 
     protected override void OnInitialized()
     {
+        filePath = Path.Combine(Configuration["ApiDirectory"] ?? "API", "urls.txt");
         scriptGroups = ScriptResultService.scriptGroups;
     }
 

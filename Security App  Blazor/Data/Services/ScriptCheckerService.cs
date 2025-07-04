@@ -2,16 +2,19 @@
 using Microsoft.AspNetCore.Components.Forms;
 using Security_App__Blazor.Data.Models;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace Security_App__Blazor.Data.Services;
 
 public class ScriptCheckerService
 {
-    private IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly string _apiDirectory;
 
-    public ScriptCheckerService(IHttpClientFactory httpClientFactory)
+    public ScriptCheckerService(IHttpClientFactory httpClientFactory, IConfiguration configuration)
     {
         _httpClientFactory = httpClientFactory;
+        _apiDirectory = configuration["ApiDirectory"] ?? "API";
     }
     public async Task<List<ScriptModel>> GetScriptAsync(string url)
     {
@@ -75,7 +78,7 @@ public class ScriptCheckerService
 
     public async Task<string> SaveFileAsync(IBrowserFile file)
     {
-        var path = Path.Combine("C:\\Users\\Chris\\source\\repos\\Security App\\Security App  Blazor\\API\\", file.Name);
+        var path = Path.Combine(_apiDirectory, file.Name);
         using var stream = file.OpenReadStream(maxAllowedSize: 2048 * 2048);
         using var fs = new FileStream(path, FileMode.Create);
         await stream.CopyToAsync(fs);
